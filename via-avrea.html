@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Via Avrea — Codex Scroll (π + 6 c)</title>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--gold:#d4af37;--goldB:#ffd700;--whiteGold:#f8ecd1;--bg:#000;--amp:1;}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--gold);
+  font-family:'EB Garamond',serif;-webkit-font-smoothing:antialiased;}
+body{overflow:hidden}
+
+/* sigil */
+.sigilBox{position:fixed;left:0;right:0;top:50%;transform:translateY(-50%);
+ display:flex;justify-content:center;z-index:10}
+.sigil{width:min(62vw,300px);opacity:.5;
+ filter:drop-shadow(0 0 calc(6px + 18px * var(--amp)) var(--goldB));
+ transition:transform .25s ease}
+.sigil:active{transform:translateY(-50%) scale(1.03)}
+
+/* scroll windows */
+.cassette{position:fixed;left:0;right:0;overflow:hidden;z-index:5}
+#cassTop{top:0}
+#cassBot{bottom:0}
+.panel{width:min(92vw,42rem);margin:0 auto;text-align:center;
+ font-size:clamp(1rem,3vw,1.25rem);line-height:1.35}
+.track{position:absolute;left:0;right:0;will-change:transform}
+.line{opacity:.85}.line:nth-child(odd){opacity:.75}
+
+/* glyphs */
+#aleph,#tav{position:fixed;left:0;right:0;display:flex;
+ justify-content:center;align-items:center;text-shadow:0 0 20px var(--goldB);pointer-events:none}
+#aleph{top:calc(50% + 6vh);font-size:min(12vw,70px);color:var(--whiteGold);
+ opacity:0;transform:translateY(6vh);transition:opacity 5s ease,transform 5s ease,color 5s ease}
+#aleph.rise{opacity:.5;transform:translateY(0);color:var(--gold)}
+#tav{top:calc(50% - 6vh);font-size:min(16vw,120px);color:var(--gold);opacity:0}
+#tav.fall{transition:opacity 5s ease,transform 5s ease,color 5s ease,text-shadow 2s ease;
+ opacity:1;transform:translateY(30vh);color:#111;
+ text-shadow:0 0 30px rgba(255,215,0,.15)}
+#hum{position:fixed;right:14px;bottom:12px;font-size:1.3rem;opacity:.65;cursor:pointer;z-index:40}
+#hum.on{opacity:1}
+</style>
+</head>
+<body>
+
+<div class="sigilBox">
+ <img id="sigil" class="sigil"
+      src="https://raw.githubusercontent.com/randal-hicks/stuff/main/sigil.PNG"
+      alt="Via Avrea sigil (Aleph Tav)">
+</div>
+
+<!-- ASCENT -->
+<div id="cassTop" class="cassette">
+ <div class="panel">
+  <div id="trackTop" class="track">
+   <div class="block">
+    <p class="line">The ascent is never smooth.</p>
+    <p class="line">The Path folds upon itself, rising through tension and return.</p>
+    <p class="line">Stability births blindness; instability births insight.</p>
+    <p class="line">The Golden Path is not drawn — it is forged in oscillation.</p>
+   </div><div class="block">
+    <p class="line">The ascent is never smooth.</p>
+    <p class="line">The Path folds upon itself, rising through tension and return.</p>
+    <p class="line">Stability births blindness; instability births insight.</p>
+    <p class="line">The Golden Path is not drawn — it is forged in oscillation.</p>
+   </div>
+  </div>
+ </div>
+</div>
+
+<!-- RETURN -->
+<div id="cassBot" class="cassette">
+ <div class="panel">
+  <div id="trackBot" class="track">
+   <div class="block">
+    <p class="line">Before the word, there was a breath,</p>
+    <p class="line">a stillness found ever long before sound.</p>
+    <p class="line">And in that stillness, was laid the primal spark,</p>
+    <p class="line">an Aleph-shaped silence.</p>
+    <p class="line">The flame ascends, coiling inwards upon itself it descends,</p>
+    <p class="line">a gold never found, yet born again.</p>
+    <p class="line">Completion is not an ending, but a remembrance.</p>
+    <p class="line">The spark that began as Aleph has returned with light in cupped hands.</p>
+    <p class="line">The breath goes out, but the flame remains.</p>
+    <p class="line">The breath returns. The path continues from whence it came.</p>
+   </div><div class="block"><!-- duplicate for loop -->
+    <p class="line">Before the word, there was a breath,</p>
+    <p class="line">a stillness found ever long before sound.</p>
+    <p class="line">And in that stillness, was laid the primal spark,</p>
+    <p class="line">an Aleph-shaped silence.</p>
+    <p class="line">The flame ascends, coiling inwards upon itself it descends,</p>
+    <p class="line">a gold never found, yet born again.</p>
+    <p class="line">Completion is not an ending, but a remembrance.</p>
+    <p class="line">The spark that began as Aleph has returned with light in cupped hands.</p>
+    <p class="line">The breath goes out, but the flame remains.</p>
+    <p class="line">The breath returns. The path continues from whence it came.</p>
+   </div>
+  </div>
+ </div>
+</div>
+
+<div id="aleph">א</div>
+<div id="tav">ת</div>
+<div id="hum">🜂</div>
+
+<script>
+const PI=Math.PI;let audioCtx,masterGain,padGain,padLP,sine,sineGain;
+let started=false,ambienceOn=false,t0=performance.now()/1000;
+const sigil=document.getElementById('sigil');
+const trackTop=document.getElementById('trackTop');
+const trackBot=document.getElementById('trackBot');
+const aleph=document.getElementById('aleph');
+const tav=document.getElementById('tav');
+const hum=document.getElementById('hum');
+
+/* === measurement === */
+let topH=0,botH=0,topBlockH=0,botBlockH=0;
+async function measure(){
+ if(document.fonts&&document.fonts.ready){try{await document.fonts.ready;}catch(e){}}
+ const r=sigil.getBoundingClientRect();
+ topH=Math.max(0,r.top);botH=Math.max(0,innerHeight-r.bottom);
+ document.getElementById('cassTop').style.height=topH+'px';
+ document.getElementById('cassBot').style.height=botH+'px';
+ topBlockH=trackTop.firstElementChild.getBoundingClientRect().height;
+ botBlockH=trackBot.firstElementChild.getBoundingClientRect().height;
+ trackTop.style.transform=`translateY(${botH}px)`;
+ trackBot.style.transform=`translateY(${-botBlockH}px)`;
+}
+
+/* === scrolling === */
+let lastT=performance.now();
+const SPEED_TOP=0.35,SPEED_BOT=0.30;
+function getY(el){const m=el.style.transform.match(/translateY\((-?\d+(\.\d+)?)px\)/);return m?parseFloat(m[1]):0;}
+function animate(){
+ const now=performance.now(),dt=(now-lastT)/16.67;lastT=now;
+ let yT=getY(trackTop)-SPEED_TOP*dt;let yB=getY(trackBot)+SPEED_BOT*dt;
+ if(yT<=-topBlockH) yT=botH; if(yB>=0) yB=-botBlockH;
+ trackTop.style.transform=`translateY(${yT}px)`;trackBot.style.transform=`translateY(${yB}px)`;
+ requestAnimationFrame(animate);
+}
+window.addEventListener('load',()=>{measure().then(()=>{lastT=performance.now();requestAnimationFrame(animate);});});
+window.addEventListener('resize',measure);
+sigil.addEventListener('load',measure);
+
+/* === audio === */
+async function ensureAudio(){
+ if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+ if(audioCtx.state==='suspended')await audioCtx.resume();
+ if(!masterGain){
+  masterGain=audioCtx.createGain();masterGain.connect(audioCtx.destination);masterGain.gain.value=0.0001;
+  const buf=audioCtx.createBuffer(1,audioCtx.sampleRate*2,audioCtx.sampleRate);
+  const d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+  const src=audioCtx.createBufferSource();src.buffer=buf;src.loop=true;
+  padLP=audioCtx.createBiquadFilter();padLP.type='lowpass';padLP.frequency.value=220;
+  padGain=audioCtx.createGain();padGain.gain.value=0;
+  src.connect(padLP).connect(padGain).connect(masterGain);src.start();
+  sine=audioCtx.createOscillator();sine.type='sine';sine.frequency.value=110;
+  sineGain=audioCtx.createGain();sineGain.gain.value=0;
+  sine.connect(sineGain).connect(masterGain);sine.start();
+  modLoop();
+ }
+}
+function modLoop(){
+ if(audioCtx&&masterGain){
+  const t=audioCtx.currentTime;
+  const tgtM=ambienceOn?0.4:0.0001,tgtP=ambienceOn?0.12:0,tgtS=ambienceOn?0.04:0;
+  masterGain.gain.setTargetAtTime(tgtM,t,.1);
+  padGain.gain.setTargetAtTime(tgtP,t,.1);
+  sineGain.gain.setTargetAtTime(tgtS,t,.1);
+ }
+ setTimeout(modLoop,60);
+}
+
+/* === glyph cycles === */
+function startCycle(){
+ aleph.classList.remove('rise');void aleph.offsetWidth;aleph.classList.add('rise');
+ setTimeout(()=>aleph.classList.remove('rise'),7000);
+}
+function sealWithTav(){
+ tav.classList.remove('halo');void tav.offsetWidth;
+ tav.classList.add('fall');
+ setTimeout(()=>tav.classList.remove('fall'),7000);
+ setTimeout(()=>startCycle(),7100);
+}
+
+/* === interaction === */
+async function unifiedStart(){
+ if(!started){started=true;t0=performance.now()/1000;await ensureAudio();ambienceOn=true;hum.classList.add('on');}
+ startCycle();
+}
+sigil.addEventListener('click',async()=>{await unifiedStart();sealWithTav();});
+hum.addEventListener('click',async()=>{await unifiedStart();ambienceOn=!ambienceOn;hum.classList.toggle('on',ambienceOn);});
+</script>
+</body>
+</html>
